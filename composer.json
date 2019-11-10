@@ -1,0 +1,35 @@
+{
+    "name": "annonyme/disptacher",
+    "description": "Simple controller-dispatcher.",
+    "type": "library",
+    "license": "MIT",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "Hannes Pries",
+            "email": "hp@hannespries.de",
+            "homepage": "https://www.hannespries.de"
+        }
+    ],
+    "repositories": [
+        {"type": "vcs", "url": "https://github.com/annonyme/events"},
+        {"type": "vcs", "url": "https://github.com/annonyme/response"}
+    ],
+    "require": {
+        "php": ">=7.0",
+        "symfony/http-foundation": "^4.3",
+        "annonyme/events": "dev-master",
+        "annonyme/response": "dev-master"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^7.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "hannespries": "src/"
+        },
+        "psr-4": {
+            "hannespries\\": "src/"
+        }
+    }
+}
