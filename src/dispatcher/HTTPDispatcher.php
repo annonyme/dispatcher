@@ -57,11 +57,10 @@ class HTTPDispatcher {
                 $controller->response = $resp;                
 
                 try{
-                    $ref = new \ReflectionClass($controller);
-                    if($ref->hasMethod($actionName . 'Action')){
+                    if($refController->hasMethod($actionName . 'Action')){
                         $this->events->fireFilterEvent('dispatcher_predispatch_' . $controllerKey . '_' . $actionName, null, ['subject' => $controller, 'action' => $actionName, 'request' => $this->request, 'response' => $resp]);
                         
-                        $method = $ref->getMethod($actionName . 'Action');
+                        $method = $refController->getMethod($actionName . 'Action');
                         $method->invoke($controller);
 
                         $resp = $this->events->fireFilterEvent('dispatcher_postdispatch_' . $controllerKey . '_' . $actionName, $resp, ['subject' => $controller, 'action' => $actionName, 'request' => $this->request, 'response' => $resp]);
@@ -88,12 +87,42 @@ class HTTPDispatcher {
                 $resp = $this->events->fireFilterEvent('dispatcher_postdispatch_' . $controllerKey . '_' . $actionName, $resp, ['subject' => $controller, 'action' => $actionName, 'request' => $this->request, 'response' => $resp]);
             }
             else if ($controller instanceof HTTPController) {
-                $ref = new \ReflectionClass($controller);
-                if($ref->hasMethod($actionName)){
+                if($refController->hasMethod($actionName)){
                     $this->events->fireFilterEvent('dispatcher_predispatch_' . $controllerKey . '_' . $actionName, null, ['subject' => $controller, 'action' => $actionName, 'request' => $this->request, 'response' => $resp]);
                     
-                    $method = $ref->getMethod($actionName);
+                    $method = $refController->getMethod($actionName);
                     $result = $method->invoke($controller, $this->request, $resp);
+                    if($result instanceof response) {
+                        $resp = $result;
+                    }
+                    else {
+                        $resp->setBody((string) $result);
+                    }
+                }
+                else{
+                    $resp->setCode(404);
+                }
+
+                $resp = $this->events->fireFilterEvent('dispatcher_postdispatch_' . $controllerKey . '_' . $actionName, $resp, ['subject' => $controller, 'action' => $actionName, 'request' => $this->request, 'response' => $resp]);
+            }
+            else {
+                if($refController->hasMethod($actionName)){
+                    $this->events->fireFilterEvent('dispatcher_predispatch_' . $controllerKey . '_' . $actionName, null, ['subject' => $controller, 'action' => $actionName, 'request' => $this->request, 'response' => $resp]);
+                    
+                    $args = [];
+                    $magicNames = [
+                        'request' => $this->request
+                    ];
+                    $method = $refController->getMethod($actionName);
+                    foreach($method->getParameters() as $param) {
+                        $value = $this->request->get($param->getName(), null);
+                        if($value === null && isset($magicNames[$param->getName()])) {
+                            $value = $magicNames[$param->getName()];
+                        }
+                        $args[] = $value;
+                    }
+
+                    $result = $method->invokeArgs($controller, $args);
                     if($result instanceof response) {
                         $resp = $result;
                     }
@@ -113,7 +142,7 @@ class HTTPDispatcher {
             $this->out->out($resp);
         }
         else {
-            //TODO throw exception
+            $resp->setCode(404);
         }
     }
 
